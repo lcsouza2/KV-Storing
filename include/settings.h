@@ -1,5 +1,6 @@
 #define MAX_SSTABLE_LEVEL_FILES 5
 #define MAX_SSTABLE_LEVELS 7
 #define MAX_SSTABLE_L0_FILE_SIZE 10485760 // 10MB
-#define SSTABLE_DEFAULT_PATH "./data/sstables"
-#define SSTABLE_MAX_PAHT_LENGTH 256
+#define SSTABLE_MAX_PATH_LENGTH 256
+
+char *get_sstable_path();
