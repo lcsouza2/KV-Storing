@@ -11,8 +11,8 @@ all: kvstore
 kvstore: $(OBJ) main.c
 	$(CC) $(CFLAGS) -o kvstore main.c $(OBJ) $(LDFLAGS)
 
-test: $(OBJ) tests/test_sstables.c
-	$(CC) $(CFLAGS) -o run_tests tests/test_sstables.c $(OBJ) $(LDFLAGS)
+test: $(OBJ) tests/main.c
+	$(CC) $(CFLAGS) -o run_tests tests/main.c $(OBJ) $(LDFLAGS)
 	./run_tests
 
 stress:
