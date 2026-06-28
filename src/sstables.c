@@ -14,13 +14,13 @@ sstable_t *create_sstable(int min_key, int max_key, int level) {
         return NULL;
     }
 
-    char filepath[SSTABLE_MAX_PAHT_LENGTH];
+    char filepath[SSTABLE_MAX_PATH_LENGTH];
 
     snprintf(
         filepath,
         sizeof(filepath),
         "%s/L%d_%d.dat",
-        SSTABLE_DEFAULT_PATH,
+        get_sstable_path(),
         level,
         _current_level_files[level]
     );
