@@ -127,6 +127,13 @@ Memtable *insert_memtable(Memtable *tree, char *key, char *value) {
     return tree;
 }
 
+void memtable_traverse_in_order(AVLNode *node, void (*callback)(AVLNode *)) {
+    if (node == NULL) return;
+    memtable_traverse_in_order(node->left, callback);
+    callback(node);
+    memtable_traverse_in_order(node->right, callback);
+}
+
 void free_memtable(Memtable *tree) {
     if (tree == NULL) return;
     _free_tree(tree->root);

@@ -19,4 +19,6 @@ Memtable *create_memtable();
 
 Memtable *insert_memtable(Memtable *tree, char *key, char *value);
 
+void memtable_traverse_in_order(AVLNode *node, void (*callback)(AVLNode *));
+
 void free_memtable(Memtable *tree);
