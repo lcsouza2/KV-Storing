@@ -1,9 +1,8 @@
-
 typedef struct sstable {
     char *path;
-    int min_key;
-    int max_key;
+    char *min_key;
+    char *max_key;
     int level;
-} sstable_t;
+} SSTable;
 
-sstable_t *create_sstable(int min_key, int max_key, int level);
+SSTable *create_sstable_in_memory(char *min_key, char *max_key, int level);
