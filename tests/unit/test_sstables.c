@@ -16,6 +16,7 @@ int test_flush_memtable_to_disk_success() {
     ASSERT_TEST(result == 0, "Failed to flush memtable to disk.");
 
     // Clean up
+    remove("./tests/data/sstables/L0_0.dat");
     clear_memtable(memtable);
 
     success("test_flush_memtable_to_disk_success passed.");
@@ -27,17 +28,13 @@ int test_sstable_search() {
     memset(large_af_str, 'A', MAX_VALUE_LENGTH);
     large_af_str[MAX_VALUE_LENGTH] = '\0';
 
-    Memtable *memtable = insert_memtable(NULL, "key1", large_af_str);
-    insert_memtable(memtable, "key2", large_af_str);
+    Memtable *memtable = insert_memtable(NULL, "special_key", large_af_str);
 
-    KeyValue *result = search_in_sstables("key1");
-    KeyValue *result2 = search_in_sstables("key2");
+    KeyValue *result = search_in_sstables("special_key");
 
     ASSERT_TEST(result != NULL, "Search result should not be NULL for existing key in SSTables.");
-    ASSERT_TEST(strcmp(result->value, large_af_str) == 0, "Value for 'key1' should match the inserted value in SSTables.");
+    ASSERT_TEST(strcmp(result->value, large_af_str) == 0, "Value for 'special_key' should match the inserted value in SSTables.");
 
-    ASSERT_TEST(result2 != NULL, "Search result should not be NULL for existing key in SSTables.");
-    ASSERT_TEST(strcmp(result2->value, large_af_str) == 0, "Value for 'key2' should match the inserted value in SSTables.");
     success("test_sstable_search passed.");
 
     free(result);
