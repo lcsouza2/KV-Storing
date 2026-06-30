@@ -119,6 +119,74 @@ static int _write_memtable_to_disk(Memtable *memtable, SSTable *sstable) {
     return context.error;
 }
 
+static KeyValue *_read_and_search_in_sstable(SSTable *sstable, char *key) {
+    if (!sstable || !sstable->path || !key) {
+        debug("Invalid parameters for search_in_sstable.");
+        return NULL;
+    }
+
+    FILE *file = _open_file_guarded(sstable->path, "rb");
+    if (!file) {
+        error("Failed to open SSTable file for reading: %s", sstable->path);
+        return NULL;
+    }
+
+    int min_key_length, max_key_length;
+    fread(&min_key_length, sizeof(int), 1, file);
+    char *min_key = malloc(min_key_length + 1);
+    fread(min_key, sizeof(char), min_key_length, file);
+    min_key[min_key_length] = '\0';
+
+    fread(&max_key_length, sizeof(int), 1, file);
+    char *max_key = malloc(max_key_length + 1);
+    fread(max_key, sizeof(char), max_key_length, file);
+    max_key[max_key_length] = '\0';
+
+    if (strcmp(key, min_key) < 0 || strcmp(key, max_key) > 0) {
+        free(min_key);
+        free(max_key);
+        fclose(file);
+        return NULL;
+    }
+
+    free(min_key);
+    free(max_key);
+
+    char *key_buffer = malloc(MAX_KEY_LENGTH + 1);
+    char *value_buffer = malloc(MAX_VALUE_LENGTH + 1);
+    int key_len_on_disk;
+
+    while (fread(&key_len_on_disk, sizeof(int), 1, file) == 1) {
+        fread(key_buffer, sizeof(char), key_len_on_disk, file);
+        key_buffer[key_len_on_disk] = '\0';
+
+        if (strcmp(key_buffer, key) == 0) {
+            int value_length;
+            fread(&value_length, sizeof(int), 1, file);
+
+            if (value_length == -1) { // Tombstone
+                free(key_buffer); free(value_buffer);
+                fclose(file);
+                return NULL;
+            }
+
+            fread(value_buffer, sizeof(char), value_length, file);
+            value_buffer[value_length] = '\0';
+
+            KeyValue *result = malloc(sizeof(KeyValue));
+            result->key = strdup(key_buffer);
+            result->value = strdup(value_buffer);
+
+            free(key_buffer);
+            free(value_buffer);
+            fclose(file);
+            return result;
+        }
+    }
+    fclose(file);
+    return NULL;
+}
+
 // INTERFACE FUNCTIONS =============================
 
 /**
@@ -173,4 +241,20 @@ int flush_memtable_to_disk(Memtable *memtable, int level) {
 
     info("Memtable flushed to disk as SSTable: %s", sstable->path);
     return 0;
+}
+
+KeyValue *search_in_sstables(char *key) {
+    for (int level = 0; level < MAX_SSTABLE_LEVELS; level++) {
+        LevelIndex *level_index = &_fast_access_sstables[level];
+
+        for (int i = level_index->count - 1; i >= 0; i--) {
+            SSTable *sstable = level_index->tables[i];
+
+            if (sstable && strcmp(key, sstable->min_key) >= 0 && strcmp(key, sstable->max_key) <= 0) {
+                KeyValue *result = _read_and_search_in_sstable(sstable, key);
+                if (result) return result;
+            }
+        }
+    }
+    return NULL;
 }
