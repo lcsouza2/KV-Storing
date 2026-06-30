@@ -70,3 +70,9 @@ para a função flush eu teria que aplicar IoC ou algo assim passando um endere�
 Melhor organização de código, o que é SSTable fica no módulo de SSTable e o que é Memtable fica no módulo de Memtable, em contraponto, isso criaria dispersão de tarefas de uma única função de flushing
 
 Ele concordou com a ideia o IoC, então implementei uma função que percorre a Memtable em ordem e executa um callback para cada nó
+
+Com o dump para o arquivo "pronto", implementei verificação de necessidade desse dump e um index rápido de metadados das sstables em memória.
+
+Refatorei o código das sstables pois tava com um acoplamento absurdo e acabou com a separação de responsabilidades, agora o módulo de sstables tem um core mais estável e fornece uma interface de interação
+
+Com o código refatorado, escrevi testes para o flush e validei o funcionamento corrigindo bugs
