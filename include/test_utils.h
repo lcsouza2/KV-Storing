@@ -1,6 +1,5 @@
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
-#endif
 
 #define ASSERT_TEST(cond, msg) \
     do { \
@@ -9,3 +8,4 @@
             return -1; \
         } \
     } while (0)
+#endif

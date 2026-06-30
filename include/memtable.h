@@ -1,7 +1,5 @@
-#ifndef AVL_TREE_H
-#define AVL_TREE_H
-#endif
-#include "user_interface.h"
+#ifndef MEMTABLE_H
+#define MEMTABLE_H
 
 typedef struct avl_node {
     char *value;
@@ -22,10 +20,11 @@ Memtable *create_memtable();
 
 Memtable *insert_memtable(Memtable *tree, char *key, char *value);
 
-KeyValue *search_memtable(Memtable *tree, char *key);
+char *search_memtable(Memtable *tree, char *key);
 
 void *delete_from_memtable(Memtable *tree, char *key);
 
 void memtable_traverse_in_order(AVLNode *node, void (*callback)(AVLNode *, void *), void *context);
 
 void clear_memtable(Memtable *tree);
+#endif

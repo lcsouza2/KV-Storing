@@ -1,7 +1,6 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 int get_memtable_size();
-#endif
 #include <stdlib.h>
 
 #define MAX_SSTABLE_LEVEL_FILES 5
@@ -18,3 +17,4 @@ int get_memtable_size();
 void get_sstable_path(char *buffer, size_t buffer_size);
 void get_wal_path(char *buffer, size_t buffer_size);
 int create_data_storage_directory();
+#endif

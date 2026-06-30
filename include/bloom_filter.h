@@ -1,6 +1,5 @@
 #ifndef BLOOM_FILTER_H
 #define BLOOM_FILTER_H
-#endif
 
 #include <stdint.h>
 
@@ -13,3 +12,4 @@ BloomFilter *bloom_filter_create();
 
 void bloom_add(BloomFilter *filter, const char *key);
 int bloom_check(BloomFilter *filter, const char *key);
+#endif
