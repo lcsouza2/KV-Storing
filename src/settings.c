@@ -50,3 +50,10 @@ int create_data_storage_directory() {
 
     return 0;
 }
+
+int get_memtable_size() {
+    if (getenv("MEMTABLE_SIZE")) {
+        return atoi(getenv("MEMTABLE_SIZE"));
+    }
+    return 5242880; // Default to 5MB if not set
+}
