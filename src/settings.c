@@ -21,7 +21,7 @@ void get_sstable_path(char *buffer, size_t buffer_size) {
 void get_wal_path(char *buffer, size_t buffer_size) {
     if (!buffer || buffer_size == 0) return;
     const char *base_path = _get_data_storage_path();
-    snprintf(buffer, buffer_size, "%s/wal", base_path);
+    snprintf(buffer, buffer_size, "%s/database.wal", base_path);
 }
 
 int create_data_storage_directory() {
@@ -39,12 +39,6 @@ int create_data_storage_directory() {
     // Create the sstables directory inside the data directory
     if (mkdir(sstables_path, 0755) == -1 && errno != EEXIST) {
         error("Failed to create sstables directory");
-        return -1;
-    }
-
-    // Create the wal directory inside the data directory
-    if (mkdir(wal_path, 0755) == -1 && errno != EEXIST) {
-        error("Failed to create wal directory");
         return -1;
     }
 
