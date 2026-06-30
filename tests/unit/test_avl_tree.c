@@ -21,7 +21,7 @@ int test_tree_insertion() {
     ASSERT_TEST(strcmp(memtable->root->left->right->value, "twenty-five") == 0, "Right child of left child of root should be 'twenty-five'.");
 
     clear_memtable(memtable);
-    info("test_tree_insertion passed.");
+    success("test_tree_insertion passed.");
     return 0;
 }
 
@@ -37,7 +37,7 @@ int test_tree_left_rotation() {
     ASSERT_TEST(strcmp(memtable->root->right->value, "thirty") == 0, "Right child of root should be 'thirty' after left rotation.");
 
     clear_memtable(memtable);
-    info("test_tree_left_rotation passed.");
+    success("test_tree_left_rotation passed.");
     return 0;
 }
 
@@ -53,7 +53,7 @@ int test_tree_right_rotation() {
     ASSERT_TEST(strcmp(memtable->root->right->value, "thirty") == 0, "Right child of root should be 'thirty' after right rotation.");
 
     clear_memtable(memtable);
-    info("test_tree_right_rotation passed.");
+    success("test_tree_right_rotation passed.");
     return 0;
 }
 
@@ -69,7 +69,7 @@ int test_tree_double_left_rotation() {
     ASSERT_TEST(strcmp(memtable->root->right->value, "thirty") == 0, "Right child of root should be 'thirty' after double left rotation.");
 
     clear_memtable(memtable);
-    info("test_tree_double_left_rotation passed.");
+    success("test_tree_double_left_rotation passed.");
     return 0;
 }
 
@@ -85,6 +85,6 @@ int test_tree_double_right_rotation() {
     ASSERT_TEST(strcmp(memtable->root->right->value, "thirty") == 0, "Right child of root should be 'thirty' after double right rotation.");
 
     clear_memtable(memtable);
-    info("test_tree_double_right_rotation passed.");
+    success("test_tree_double_right_rotation passed.");
     return 0;
 }

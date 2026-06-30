@@ -14,7 +14,7 @@ int test_memtable_create() {
     ASSERT_TEST(memtable->max_key == NULL, "Newly created memtable should have a NULL max_key.");
     clear_memtable(memtable);
     free(memtable);
-    info("test_memtable_create passed.");
+    success("test_memtable_create passed.");
     return 0;
 }
 
@@ -30,7 +30,7 @@ int test_memtable_insert() {
 
     clear_memtable(memtable);
     free(memtable);
-    info("test_memtable_insert passed.");
+    success("test_memtable_insert passed.");
     return 0;
 }
 
@@ -44,7 +44,7 @@ int test_memtable_min_max_keys() {
 
     clear_memtable(memtable);
     free(memtable);
-    info("test_memtable_min_max_keys passed.");
+    success("test_memtable_min_max_keys passed.");
     return 0;
 }
 
@@ -64,7 +64,7 @@ int test_memtable_tacks_min_max_key_in_o1() {
     insert_memtable(memtable, "cat", "gato");
     ASSERT_TEST(strcmp(memtable->min_key, "apple") == 0, "Min key should be 'apple' after fourth insertion.");
     ASSERT_TEST(strcmp(memtable->max_key, "zebra") == 0, "Max key should be 'zebra' after fourth insertion.");
-    info("test_memtable_tacks_min_max_key_in_o1 passed.");
+    success("test_memtable_tacks_min_max_key_in_o1 passed.");
     clear_memtable(memtable);
     free(memtable);
     return 0;
@@ -77,7 +77,7 @@ int test_memtable_update_existing_key() {
     KeyValue *result = search_memtable(memtable, "key1");
     ASSERT_TEST(result != NULL, "Search result should not be NULL for existing key.");
     ASSERT_TEST(strcmp(result->value, "value2") == 0, "Value for 'key1' should be updated to 'value2'.");
-    info("test_memtable_update_existing_key passed.");
+    success("test_memtable_update_existing_key passed.");
     clear_memtable(memtable);
     free(memtable);
     free(result);
@@ -92,7 +92,7 @@ int test_memtable_delete_existing_key() {
     KeyValue *result = search_memtable(memtable, "key1");
     ASSERT_TEST(result != NULL, "Search result should not be NULL for deleted key.");
     ASSERT_TEST(result->value == NULL, "Value for deleted key should be NULL (tombstone).");
-    info("test_memtable_delete_existing_key passed.");
+    success("test_memtable_delete_existing_key passed.");
     clear_memtable(memtable);
     free(memtable);
     free(result);
@@ -105,7 +105,7 @@ int test_memtable_delete_nonexistent_key() {
 
     KeyValue *result = search_memtable(memtable, "nonexistent_key");
     ASSERT_TEST(result == NULL, "Search result should be NULL for nonexistent key.");
-    info("test_memtable_delete_nonexistent_key passed.");
+    success("test_memtable_delete_nonexistent_key passed.");
     clear_memtable(memtable);
     free(memtable);
     free(result);
@@ -117,7 +117,7 @@ int test_memtable_search_nonexistent_key() {
 
     KeyValue *result = search_memtable(memtable, "nonexistent_key");
     ASSERT_TEST(result == NULL, "Search result should be NULL for nonexistent key.");
-    info("test_memtable_search_nonexistent_key passed.");
+    success("test_memtable_search_nonexistent_key passed.");
     clear_memtable(memtable);
     free(memtable);
     free(result);
@@ -130,7 +130,7 @@ int test_memtable_search_existing_key() {
     KeyValue *result = search_memtable(memtable, "key1");
     ASSERT_TEST(result != NULL, "Search result should not be NULL for existing key.");
     ASSERT_TEST(strcmp(result->value, "value1") == 0, "Value for 'key1' should be 'value1'.");
-    info("test_memtable_search_existing_key passed.");
+    success("test_memtable_search_existing_key passed.");
     clear_memtable(memtable);
     free(memtable);
     free(result);
@@ -146,7 +146,7 @@ int test_memtable_autoflush() {
     memtable = insert_memtable(memtable, "key2", large_af_str);
 
     ASSERT_TEST(memtable->bytes_allocated <= MAX_MEMTABLE_SIZE, "Memtable should not exceed MAX_MEMTABLE_SIZE after multiple insertions.");
-    info("test_memtable_autoflush passed.");
+    success("test_memtable_autoflush passed.");
     clear_memtable(memtable);
     free(memtable);
     free(large_af_str);
