@@ -2,6 +2,7 @@
 #include "memtable.h"
 #include "logging.h"
 #include "interface.h"
+#include "settings.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -133,5 +134,25 @@ int test_memtable_search_existing_key() {
     clear_memtable(memtable);
     free(memtable);
     free(result);
+    return 0;
+}
+
+int test_memtable_autoflush() {
+    char *large_af_str = malloc(MAX_VALUE_LENGTH + 1);
+    memset(large_af_str, 'A', MAX_VALUE_LENGTH);
+    large_af_str[MAX_VALUE_LENGTH] = '\0';
+
+    Memtable *memtable = insert_memtable(NULL, "key1", large_af_str);
+    debug("Memtable bytes allocated after first insertion: %d", memtable->bytes_allocated);
+    memtable = insert_memtable(memtable, "key2", large_af_str);
+    debug("Memtable bytes allocated after second insertion: %d", memtable->bytes_allocated);
+
+    debug("Max bytes %d", MAX_MEMTABLE_SIZE);
+
+    ASSERT_TEST(memtable->bytes_allocated <= MAX_MEMTABLE_SIZE, "Memtable should not exceed MAX_MEMTABLE_SIZE after multiple insertions.");
+    info("test_memtable_autoflush passed.");
+    clear_memtable(memtable);
+    free(memtable);
+    free(large_af_str);
     return 0;
 }
