@@ -166,7 +166,7 @@ Memtable *create_memtable() {
     tree->root = NULL;
     tree->min_key = NULL;
     tree->max_key = NULL;
-    tree->bytes_allocated = sizeof(Memtable);
+    tree->bytes_allocated = 0;
     return tree;
 }
 
@@ -178,7 +178,7 @@ void clear_memtable(Memtable *tree) {
     tree->root = NULL;
     tree->min_key = NULL;
     tree->max_key = NULL;
-    tree->bytes_allocated = sizeof(Memtable);
+    tree->bytes_allocated = 0;
 }
 
 Memtable *insert_memtable(Memtable *tree, char *key, char *value) {
