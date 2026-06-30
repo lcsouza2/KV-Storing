@@ -5,12 +5,14 @@
 #include "logging.h"
 #include "sstables.h"
 #include "memtable.h"
+#include "bloom_filter.h"
 
 LevelIndex _fast_access_sstables[MAX_SSTABLE_LEVELS];
 
 typedef struct _serialization_context {
     FILE *file;
     int error;
+    BloomFilter *bloom_filter;
 } _SerializationContext;
 
 static FILE *_open_file_guarded(const char *path, const char *mode) {
@@ -80,6 +82,8 @@ static void _write_node_to_sstable_callback(AVLNode *node, void *ctx) {
     size_t w3 = fwrite(&value_length, sizeof(int), 1, context->file);
     size_t w4 = fwrite(node->value, sizeof(char), value_length, context->file);
 
+    bloom_add(context->bloom_filter, node->key); // Add the key to the Bloom filter
+
     if (w1 != 1 || w2 != (size_t)key_length || w3 != 1 || w4 != (size_t)value_length) {
         context->error = -1;
         error("IO error while writing node to SSTable.");
@@ -113,7 +117,7 @@ static int _write_memtable_to_disk(Memtable *memtable, SSTable *sstable) {
     fwrite(&max_key_length, sizeof(int), 1, file);
     fwrite(max_key, sizeof(char), max_key_length, file);
 
-    _SerializationContext context = { .file = file, .error = 0 };
+    _SerializationContext context = { .file = file, .error = 0, .bloom_filter = sstable->bloom_filter };
     memtable_traverse_in_order(memtable->root, _write_node_to_sstable_callback, &context);
     fclose(file);
     return context.error;
@@ -232,6 +236,7 @@ int flush_memtable_to_disk(Memtable *memtable, int level) {
     sstable->min_key = strdup(memtable->min_key);
     sstable->max_key = strdup(memtable->max_key);
     sstable->path = _generate_sstable_filepath(level);
+    sstable->bloom_filter = bloom_filter_create();
 
     if (!sstable->path) {
         error("Failed to generate SSTable file path.");
@@ -264,6 +269,12 @@ KeyValue *search_in_sstables(char *key) {
 
         for (int i = level_index->count - 1; i >= 0; i--) {
             SSTable *sstable = level_index->tables[i];
+
+            if (!bloom_check(sstable->bloom_filter, key)) {
+                debug("Bloom filter said 'GET OUT!' to key: %s in SSTable: %s", key, sstable->path);
+                continue;
+            }
+            debug("Bloom filter said 'Maybe...' to key: %s in SSTable: %s", key, sstable->path);
 
             if (sstable && strcmp(key, sstable->min_key) >= 0 && strcmp(key, sstable->max_key) <= 0) {
                 KeyValue *result = _read_and_search_in_sstable(sstable, key);
