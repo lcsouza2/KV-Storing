@@ -78,3 +78,12 @@ Refatorei o código das sstables pois tava com um acoplamento absurdo e acabou c
 Com o código refatorado, escrevi testes para o flush e validei o funcionamento corrigindo bugs
 
 Após isso, escrevi funções para buscar e excluir chaves na memtable, não foi um problema tão grande graças, só tive que alterar as funções da árvore AVL pra adicionar tombstones e atualizar onde necessário, além de escrever testes para essas funções e validar o funcionamento
+
+Depois de implementar essa interface com a memtable, comecei a implementar a busca nas SSTables, que é o próximo passo do projeto. Implementei, rodei testes e corrigi alguns bugs que apareceram
+O bug mais feio que apareceu foi um onde a funçaõ de busca não encontrava a chave por que min_key e max_key nos indexes estavam corrompidos, isso fazia com que a função tentasse comparar a chave com lixo de memória. O problema era causado atribuindo os ponteiros de min_key e max_key da memtable para a sstable sem strdup, então quando a memtable era limpa, os ponteiros da sstable apontavam para lixo de memória. Corrigi isso usando strdup e agora o bug é outro. Durante a busca, a função não usa fseek para pular valores que não condizem com o que ela quer, isso causa desalinhamento de ponteiro do arquivo, além disso, os testes alocavam strings gigantescas de "A" para testar o flush, isso fazia com que a função de busca tentasse ler um valor gigante do arquivo, causando estouro do buffer de leitura e corrompendo o restante dos dados. Corrigi isso usando fseek para pular os valores que não condizem com a chave buscada e alocando um buffer de leitura do tamanho do valor lido do arquivo, assim evitando estouro de buffer e desalinhamento de ponteiro.
+
+Depois desses lindo bugs, descobri que os dados dos nós não estavam sendo gravados no arquivo, então revisei a função que escrevia esses nós no arquivo, e encontrei a seguinte condição:
+```
+    if (!context || !context->file || !context->error || !node) return;
+```
+Vi "!context->error" e quis morrer, então corrigi para "context->error" e agora os dados estão sendo gravados corretamente no arquivo.
