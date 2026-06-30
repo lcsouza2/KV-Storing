@@ -1,6 +1,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
+void success(const char *format, ...) __attribute__((format(printf, 1, 2)));
 void info(const char *format, ...)    __attribute__((format(printf, 1, 2)));
 void warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
 void error(const char *format, ...)   __attribute__((format(printf, 1, 2)));
