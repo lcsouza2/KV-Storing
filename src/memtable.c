@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "logging.h"
 #include "memtable.h"
+#include "sstables.h"
 
 // LOW LEVEL FUNCTIONS =============================
 int _get_height(AVLNode *node) {
@@ -97,6 +98,33 @@ AVLNode *_insert(AVLNode *node, char *key, char *value) {
     return node;
 }
 
+int _update_memtable_min_max_keys(Memtable *memtable, char *key) {
+    if (!memtable || !key) {
+        debug("Memtable or key is NULL in _update_memtable_min_max_keys.");
+        return -1;
+    }
+
+    if (memtable->min_key == NULL || strcmp(key, memtable->min_key) < 0) {
+        if (memtable->min_key) free(memtable->min_key);
+        memtable->min_key = strdup(key);
+        if (!memtable->min_key) {
+            debug("Failed to allocate memory for min_key in Memtable.");
+            return -1;
+        }
+    }
+
+    if (memtable->max_key == NULL || strcmp(key, memtable->max_key) > 0) {
+        if (memtable->max_key) free(memtable->max_key);
+        memtable->max_key = strdup(key);
+        if (!memtable->max_key) {
+            debug("Failed to allocate memory for max_key in Memtable.");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 void _free_tree(AVLNode *node) {
     if (node == NULL) return;
     _free_tree(node->left);
@@ -116,32 +144,38 @@ Memtable *create_memtable() {
         return NULL;
     }
     tree->root = NULL;
+    tree->min_key = NULL;
+    tree->max_key = NULL;
     tree->bytes_allocated = sizeof(Memtable);
     return tree;
 }
 
 Memtable *insert_memtable(Memtable *tree, char *key, char *value) {
-    if (tree == NULL) return NULL;
+    if (tree == NULL) tree = create_memtable();
     tree->root = _insert(tree->root, key, value);
     tree->bytes_allocated += sizeof(AVLNode) + strlen(key) + strlen(value) + 2; //\0
+    _update_memtable_min_max_keys(tree, key);
+
     info("Inserted key-value pair into memtable: %s -> %s", key, value);
     if (tree->bytes_allocated > (1024 * 10240) * 10) { // Example threshold of 10MB
         info("Memtable size exceeded threshold. Flushing to disk...");
-        flush_memtable_to_disk(tree);
+        flush_memtable_to_disk(tree, 0);
     }
     return tree;
 }
 
-void memtable_traverse_in_order(AVLNode *node, void (*callback)(AVLNode *)) {
+void memtable_traverse_in_order(AVLNode *node, void (*callback)(AVLNode *, void *), void *context) {
     if (node == NULL) return;
-    memtable_traverse_in_order(node->left, callback);
-    callback(node);
-    memtable_traverse_in_order(node->right, callback);
+    memtable_traverse_in_order(node->left, callback, context);
+    callback(node, context);
+    memtable_traverse_in_order(node->right, callback, context);
 }
 
 void free_memtable(Memtable *tree) {
     if (tree == NULL) return;
     _free_tree(tree->root);
+    if (tree->min_key) free(tree->min_key);
+    if (tree->max_key) free(tree->max_key);
     free(tree);
 }
 // INTERFACE FUNCTIONS =============================
