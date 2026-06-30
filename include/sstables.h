@@ -2,7 +2,7 @@
 #define SSTABLES_H
 #endif
 #include "memtable.h"
-#include "interface.h"
+#include "user_interface.h"
 #include "bloom_filter.h"
 
 typedef struct sstable {

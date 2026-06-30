@@ -1,7 +1,7 @@
 #ifndef AVL_TREE_H
 #define AVL_TREE_H
 #endif
-#include "interface.h"
+#include "user_interface.h"
 
 typedef struct avl_node {
     char *value;

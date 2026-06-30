@@ -8,9 +8,9 @@ int get_memtable_size();
 #define MAX_SSTABLE_LEVELS 7
 #define MAX_MEMTABLE_SIZE get_memtable_size() // 5MB || defined by environment variable MEMTABLE_SIZE
 #define SSTABLE_MAX_PATH_LENGTH 256
+#define WAL_MAX_PATH_LENGTH 256
 
 #define MAX_KEY_LENGTH 256
-#define MAX_VALUE_LENGTH 1024
 
 #define BLOOM_FILTER_SIZE_BITS 1024 // Size of the Bloom filter in bits
 #define BLOOM_FILTER_SIZE_BYTES (BLOOM_FILTER_SIZE_BITS / 8) // Size of the Bloom filter in bytes
