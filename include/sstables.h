@@ -1,3 +1,8 @@
+#ifndef SSTABLES_H
+#define SSTABLES_H
+#endif
+#include "memtable.h"
+
 typedef struct sstable {
     char *path;
     char *min_key;
@@ -11,4 +16,4 @@ typedef struct level_index {
     SSTable **tables;      // Array dinâmico de ponteiros para as SSTables
 } LevelIndex;
 
-SSTable *dump_memtable_to_disk(Memtable *memtable, int level);
+SSTable *flush_memtable_to_disk(Memtable *memtable, int level);
