@@ -143,11 +143,7 @@ int test_memtable_autoflush() {
     large_af_str[MAX_VALUE_LENGTH] = '\0';
 
     Memtable *memtable = insert_memtable(NULL, "key1", large_af_str);
-    debug("Memtable bytes allocated after first insertion: %d", memtable->bytes_allocated);
     memtable = insert_memtable(memtable, "key2", large_af_str);
-    debug("Memtable bytes allocated after second insertion: %d", memtable->bytes_allocated);
-
-    debug("Max bytes %d", MAX_MEMTABLE_SIZE);
 
     ASSERT_TEST(memtable->bytes_allocated <= MAX_MEMTABLE_SIZE, "Memtable should not exceed MAX_MEMTABLE_SIZE after multiple insertions.");
     info("test_memtable_autoflush passed.");
