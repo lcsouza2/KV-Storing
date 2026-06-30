@@ -5,7 +5,7 @@
 #include "memtable.h"
 #include "sstables.h"
 #include "settings.h"
-#include "interface.h"
+#include "user_interface.h"
 
 // LOW LEVEL FUNCTIONS =============================
 int _get_height(AVLNode *node) {
@@ -193,16 +193,6 @@ Memtable *insert_memtable(Memtable *tree, char *key, char *value) {
         info("Inserted/Updated key-value pair into memtable: %s -> %s", key, value);
     } else {
         info("Inserted Tombstone into memtable for key: %s", key);
-    }
-
-    if (tree->bytes_allocated > MAX_MEMTABLE_SIZE) {
-        info("Memtable size exceeded threshold. Flushing to disk...");
-        if (flush_memtable_to_disk(tree, 0) != 0) {
-            error("Failed to flush memtable to disk.");
-        } else {
-            info("Memtable flushed to disk successfully.");
-            clear_memtable(tree);
-        }
     }
     return tree;
 }
