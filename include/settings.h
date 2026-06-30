@@ -4,7 +4,7 @@
 
 #define MAX_SSTABLE_LEVEL_FILES 5
 #define MAX_SSTABLE_LEVELS 7
-#define MAX_SSTABLE_L0_FILE_SIZE 10485760 // 10MB
+#define MAX_MEMTABLE_SIZE 10485760 // 10MB
 #define SSTABLE_MAX_PATH_LENGTH 256
 
 void get_sstable_path(char *buffer, size_t buffer_size);
