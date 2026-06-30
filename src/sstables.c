@@ -47,7 +47,7 @@ static char *_generate_sstable_filepath(int level) {
 static int _add_sstable_to_level_index(SSTable *sstable) {
     if (!sstable) {
         debug("SSTable is NULL on _add_sstable_to_level_index.");
-        return 1;
+        return -1;
     }
 
     int level = sstable->level;
@@ -58,7 +58,7 @@ static int _add_sstable_to_level_index(SSTable *sstable) {
         SSTable **new_tables = realloc(level_index->tables, new_capacity * sizeof(SSTable *));
         if (!new_tables) {
             error("Failed to reallocate memory for fast access sstables.");
-            return 1;
+            return -1;
         }
         level_index->tables = new_tables;
         level_index->capacity = new_capacity;
@@ -81,7 +81,7 @@ static void _write_node_to_sstable_callback(AVLNode *node, void *ctx) {
     size_t w4 = fwrite(node->value, sizeof(char), value_length, context->file);
 
     if (w1 != 1 || w2 != (size_t)key_length || w3 != 1 || w4 != (size_t)value_length) {
-        context->error = 1;
+        context->error = -1;
         error("IO error while writing node to SSTable.");
     }
 }
@@ -90,14 +90,15 @@ static void _write_node_to_sstable_callback(AVLNode *node, void *ctx) {
 static int _write_memtable_to_disk(Memtable *memtable, SSTable *sstable) {
     if (!memtable || !memtable->root) {
         debug("Memtable is empty or NULL.");
-        return 1;
+        return -1;
     }
 
     FILE *file = _open_file_guarded(sstable->path, "wb");
     if (!file) {
+        error("Failed to open SSTable file for writing: %s", sstable->path);
         free(sstable->path);
         free(sstable);
-        return 1;
+        return -1;
     }
 
     char *min_key = memtable->min_key;
@@ -122,26 +123,26 @@ static int _write_memtable_to_disk(Memtable *memtable, SSTable *sstable) {
 
 /**
  * Flushes the given memtable to disk as an SSTable at the specified level.
- * Returns a pointer to the created SSTable on success, or NULL on failure.
+ * Returns 0 on success, or -1 on failure.
  * Params:
  *   memtable (Memtable *) - pointer to memtable to flush
  *   level (int) - the level at which to create the SSTable
  */
-SSTable *flush_memtable_to_disk(Memtable *memtable, int level) {
+int flush_memtable_to_disk(Memtable *memtable, int level) {
     if (!memtable || !memtable->root) {
         error("Memtable is empty or NULL.");
-        return NULL;
+        return -1;
     }
 
     if (level < 0 || level >= MAX_SSTABLE_LEVELS) {
         error("Invalid SSTable level: %d", level);
-        return NULL;
+        return -1;
     }
 
     SSTable *sstable = malloc(sizeof(SSTable));
     if (!sstable) {
         error("Failed to allocate memory for SSTable.");
-        return NULL;
+        return -1;
     };
 
     sstable->level = level;
@@ -152,14 +153,14 @@ SSTable *flush_memtable_to_disk(Memtable *memtable, int level) {
     if (!sstable->path) {
         error("Failed to generate SSTable file path.");
         free(sstable);
-        return NULL;
+        return -1;
     }
 
     if (_write_memtable_to_disk(memtable, sstable)) {
         error("Failed to write memtable to disk.");
         free(sstable->path);
         free(sstable);
-        return NULL;
+        return -1;
     }
 
     if (_add_sstable_to_level_index(sstable)) {
@@ -167,9 +168,9 @@ SSTable *flush_memtable_to_disk(Memtable *memtable, int level) {
         remove(sstable->path);
         free(sstable->path);
         free(sstable);
-        return NULL;
+        return -1;
     }
 
     info("Memtable flushed to disk as SSTable: %s", sstable->path);
-    return sstable;
+    return 0;
 }
