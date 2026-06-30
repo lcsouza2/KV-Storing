@@ -124,6 +124,11 @@ Memtable *insert_memtable(Memtable *tree, char *key, char *value) {
     if (tree == NULL) return NULL;
     tree->root = _insert(tree->root, key, value);
     tree->bytes_allocated += sizeof(AVLNode) + strlen(key) + strlen(value) + 2; //\0
+    info("Inserted key-value pair into memtable: %s -> %s", key, value);
+    if (tree->bytes_allocated > (1024 * 10240) * 10) { // Example threshold of 10MB
+        info("Memtable size exceeded threshold. Flushing to disk...");
+        flush_memtable_to_disk(tree);
+    }
     return tree;
 }
 
