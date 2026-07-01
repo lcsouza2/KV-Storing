@@ -6,6 +6,7 @@ typedef struct {
     FILE *file;
     char *current_key;
     char *current_value;
+    int level;
     int sstable_id;
     int is_exhausted;
 } SSTableIterator;
@@ -23,5 +24,7 @@ typedef struct {
     int size;
     int capacity;
 } MinHeap;
+
+void compact_sstables(SSTableIterator **iters, int num_iters, const char *base_name);
 
 #endif

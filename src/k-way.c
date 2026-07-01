@@ -1,4 +1,8 @@
 #include "k_way.h"
+#include "settings.h"
+#include "logging.h"
+#include "bloom_filter.h"
+#include "sstables.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -23,10 +27,11 @@ static SSTableIterator *_create_iterator() {
     iterator->current_key = NULL;
     iterator->current_value = NULL;
     iterator->is_exhausted = 0;
+    iterator->level = 0;
     return iterator;
 }
 
-static SSTableIterator *_iterator_init(const char *file_path, int sstable_id) {
+static SSTableIterator *_iterator_init(const char *file_path, int sstable_id, int level) {
     FILE *fp = fopen(file_path, "rb");
     if (!fp) return NULL;
 
@@ -46,6 +51,7 @@ static SSTableIterator *_iterator_init(const char *file_path, int sstable_id) {
 
     iterator->sstable_id = sstable_id;
     iterator->file = fp;
+    iterator->level = level;
     return iterator;
 }
 
@@ -86,7 +92,7 @@ static HeapNode *_create_node_from_iterator(SSTableIterator *iterator) {
     node->key = strdup(iterator->current_key);
     node->value = iterator->current_value ? strdup(iterator->current_value) : NULL;
     node->iterator_index = iterator->sstable_id;
-    node->level = 0; // Ajuste conforme seu esquema de prioridade
+    node->level = iterator->level;
     return node;
 }
 
@@ -94,18 +100,6 @@ static void _swap_nodes(HeapNode **a, HeapNode **b) {
     HeapNode *temp = *a;
     *a = *b;
     *b = temp;
-}
-
-static void _shift_up(MinHeap *heap, int index) {
-    while (index > 0) {
-        int parent_index = (index - 1) / 2;
-        if (_compare_heap_nodes(heap->nodes[index], heap->nodes[parent_index]) < 0) {
-            _swap_nodes(&heap->nodes[index], &heap->nodes[parent_index]);
-            index = parent_index;
-        } else {
-            break;
-        }
-    }
 }
 
 static void _shift_down(MinHeap *heap, int index) {
@@ -193,26 +187,70 @@ HeapNode *get_next_merged_kv(MinHeap *heap, SSTableIterator **iterators) {
     return winner;
 }
 
-void compact_sstables(SSTableIterator **iters, int num_iters, const char *output_file) {
+void compact_sstables(SSTableIterator **iters, int num_iters, const char *base_name) {
     MinHeap *heap = min_heap_init(iters, num_iters);
-    FILE *out = fopen(output_file, "wb");
 
-    HeapNode *key_value;
-    while ((key_value = get_next_merged_kv(heap, iters)) != NULL) {
-        int key_len = strlen(key_value->key);
-        int value_len = key_value->value ? strlen(key_value->value) : -1;
+    FILE *out = NULL;
+    long current_file_size = 0;
+    int file_count = 0;
+    char output_path[256];
+
+    char *min_key = NULL;
+    char *max_key = NULL;
+    BloomFilter *bloom_filter = NULL;
+
+    HeapNode *kv;
+    while ((kv = get_next_merged_kv(heap, iters)) != NULL) {
+        int key_len = strlen(kv->key);
+        int value_len = kv->value ? strlen(kv->value) : -1;
+        unsigned long record_size = sizeof(int) * 2 + key_len + (value_len > 0 ? value_len : 0);
+        unsigned long max_file_size = MAX_MEMTABLE_SIZE * 10 * iters[0]->level + 1;
+
+        if (!out || (current_file_size + record_size) > max_file_size) {
+            // Register and closes the last sstable before creating a new one
+            if (out) {
+                register_new_sstable(iters[0]->level + 1, file_count - 1, min_key, max_key, bloom_filter);
+                free(min_key);
+                free(max_key);
+                min_key = max_key = NULL;
+                fclose(out);
+            }
+
+            sprintf(output_path, "%s_%d.dat", base_name, file_count++);
+            out = fopen(output_path, "wb");
+            current_file_size = 0;
+            bloom_filter = bloom_filter_create();
+
+            info("Creating new file: %s", output_path);
+        }
+
+        if (!min_key) min_key = strdup(kv->key);
+        if (max_key) free(max_key);
+        max_key = strdup(kv->key);
 
         fwrite(&key_len, sizeof(int), 1, out);
-        fwrite(key_value->key, sizeof(char), key_len, out);
+        fwrite(kv->key, sizeof(char), key_len, out);
         fwrite(&value_len, sizeof(int), 1, out);
-        if (value_len > 0) fwrite(key_value->value, sizeof(char), value_len, out);
+        if (value_len > 0) {
+            fwrite(kv->value, sizeof(char), value_len, out);
+            if (bloom_filter) {
+                bloom_add(bloom_filter, kv->key);
+            }
+        };
 
-        free(key_value->key);
-        free(key_value->value);
-        free(key_value);
+        current_file_size += record_size;
+
+        free(kv->key);
+        free(kv->value);
+        free(kv);
     }
 
-    fclose(out);
+    if (out) {
+        register_new_sstable(iters[0]->level + 1, file_count - 1, min_key, max_key, bloom_filter);
+        free(min_key); free(max_key);
+        fclose(out);
+    }
+
     free(heap->nodes);
     free(heap);
 }
