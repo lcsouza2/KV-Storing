@@ -110,3 +110,7 @@ Queria implementar um perf timer, como faço isso?
 ```
 
 Ele me deu um bloco de código que usava CLOCK_MONOTONIC, mas por ser uma definição exclusiva dos kernels POSIX eu pedi pra ele me dar uma alternativa que fosse cross-platform, então ele me deu um bloco de código que usava #ifdef _WIN32 para Windows e #else para Linux, e eu implementei o perf counter cross-platform com sucesso.
+
+Com o perf counter implementado, comecei a implementar as funções de interface de usuário, que chamam as funções da memtable e das SSTables, e também fazem logging das operações. Depois de implementar essas funções, comecei a escrever testes para elas e passaram sem problemas.
+
+O próximo passo é implementar o merge k-vias, que é o processo de compactação das SSTables entre os níveis e do display all keys. Mas antes, vou fazer um menu para a aplicação, documentar e proteger algumas funções com static e _ antes do nome.
