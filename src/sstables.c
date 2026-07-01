@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "settings.h"
 #include "logging.h"
 #include "sstables.h"
@@ -29,11 +30,10 @@ static FILE *_open_file_guarded(const char *path, const char *mode) {
     return file;
 }
 
-static char *_generate_sstable_filepath(int level) {
+static char *_generate_sstable_filepath(int level, int id) {
     char filepath[SSTABLE_MAX_PATH_LENGTH];
     char sstable_path[SSTABLE_MAX_PATH_LENGTH / 2];
     get_sstable_path(sstable_path, sizeof(sstable_path));
-    int count = _fast_access_sstables[level].count;
 
     snprintf(
         filepath,
@@ -41,7 +41,7 @@ static char *_generate_sstable_filepath(int level) {
         "%s/L%d_%d.dat",
         sstable_path,
         level,
-        count
+        id
     );
 
     return strdup(filepath);
@@ -70,7 +70,6 @@ static int _add_sstable_to_level_index(SSTable *sstable) {
     return 0;
 }
 
-
 static void _write_node_to_sstable_callback(AVLNode *node, void *ctx) {
     _SerializationContext *context = (_SerializationContext *)ctx;
     if (!context || !context->file || context->error || !node) return;
@@ -91,7 +90,6 @@ static void _write_node_to_sstable_callback(AVLNode *node, void *ctx) {
     }
 }
 
-
 static int _write_memtable_to_disk(Memtable *memtable, SSTable *sstable) {
     if (!memtable || !memtable->root) {
         debug("Memtable is empty or NULL.");
@@ -109,14 +107,17 @@ static int _write_memtable_to_disk(Memtable *memtable, SSTable *sstable) {
     char *min_key = memtable->min_key;
     char *max_key = memtable->max_key;
 
-    int min_key_length = strlen(min_key);
-    int max_key_length = strlen(max_key);
-
-    //Writes a header to the SSTable file with the min and max keys for optimal search
+    int min_key_length = (min_key) ? strlen(min_key) : 0;
     fwrite(&min_key_length, sizeof(int), 1, file);
-    fwrite(min_key, sizeof(char), min_key_length, file);
+    if (min_key_length > 0) {
+        fwrite(min_key, sizeof(char), min_key_length, file);
+    }
+
+    int max_key_length = (max_key) ? strlen(max_key) : 0;
     fwrite(&max_key_length, sizeof(int), 1, file);
-    fwrite(max_key, sizeof(char), max_key_length, file);
+    if (max_key_length > 0) {
+        fwrite(max_key, sizeof(char), max_key_length, file);
+    }
 
     _SerializationContext context = { .file = file, .error = 0, .bloom_filter = sstable->bloom_filter };
     memtable_traverse_in_order(memtable->root, _write_node_to_sstable_callback, &context);
@@ -205,6 +206,55 @@ static char *_read_and_search_in_sstable(SSTable *sstable, char *key) {
     return NULL;
 }
 
+static int _write_to_manifest(uint8_t opcode, SSTable *sstable) {
+    char sstable_path[SSTABLE_MAX_PATH_LENGTH / 2];
+    get_sstable_path(sstable_path, sizeof(sstable_path));
+    char manifest_path[SSTABLE_MAX_PATH_LENGTH];
+    snprintf(manifest_path, sizeof(manifest_path), "%s/manifest.dat", sstable_path);
+
+    FILE *manifest_file = _open_file_guarded(manifest_path, "ab");
+    if (!manifest_file) {
+        error("Failed to open manifest file for writing: %s", manifest_path);
+        return -1;
+    }
+
+    fwrite(&opcode, sizeof(uint8_t), 1, manifest_file);
+
+    int level = sstable->level;
+    fwrite(&level, sizeof(int), 1, manifest_file);
+
+    fwrite(&sstable->id, sizeof(int), 1, manifest_file);
+
+    int min_key_length = (sstable->min_key) ? strlen(sstable->min_key) : 0;
+    fwrite(&min_key_length, sizeof(int), 1, manifest_file);
+    if (min_key_length > 0) {
+        fwrite(sstable->min_key, sizeof(char), min_key_length, manifest_file);
+    }
+
+    int max_key_length = (sstable->max_key) ? strlen(sstable->max_key) : 0;
+    fwrite(&max_key_length, sizeof(int), 1, manifest_file);
+    if (max_key_length > 0) {
+        fwrite(sstable->max_key, sizeof(char), max_key_length, manifest_file);
+    }
+
+    uint8_t *bloom_array = (sstable->bloom_filter) ? sstable->bloom_filter->bit_array : NULL;
+    int bloom_filter_size = BLOOM_FILTER_SIZE_BYTES;
+    fwrite(&bloom_filter_size, sizeof(int), 1, manifest_file);
+    if (bloom_array != NULL) {
+        fwrite(bloom_array, sizeof(uint8_t), BLOOM_FILTER_SIZE_BYTES, manifest_file);
+    } else {
+        uint8_t empty_bf[BLOOM_FILTER_SIZE_BYTES] = {0};
+        fwrite(empty_bf, sizeof(uint8_t), BLOOM_FILTER_SIZE_BYTES, manifest_file);
+    }
+
+    fflush(manifest_file);
+    fsync(fileno(manifest_file));
+
+    fclose(manifest_file);
+    return 0;
+}
+
+
 // INTERFACE FUNCTIONS =============================
 
 /**
@@ -231,10 +281,13 @@ int flush_memtable_to_disk(Memtable *memtable, int level) {
         return -1;
     };
 
+    int id = _fast_access_sstables[level].count;
+
     sstable->level = level;
     sstable->min_key = strdup(memtable->min_key);
     sstable->max_key = strdup(memtable->max_key);
-    sstable->path = _generate_sstable_filepath(level);
+    sstable->id = id;
+    sstable->path = _generate_sstable_filepath(level, id);
     sstable->bloom_filter = bloom_filter_create();
 
     if (!sstable->path) {
@@ -250,6 +303,14 @@ int flush_memtable_to_disk(Memtable *memtable, int level) {
         return -1;
     }
 
+    if (_write_to_manifest(0x01, sstable)) {
+        error("Failed to write SSTable metadata to manifest.");
+        remove(sstable->path);
+        free(sstable->path);
+        free(sstable);
+        return -1;
+    }
+
     if (_add_sstable_to_level_index(sstable)) {
         error("Failed to add SSTable to fast access index.");
         remove(sstable->path);
@@ -259,6 +320,99 @@ int flush_memtable_to_disk(Memtable *memtable, int level) {
     }
 
     info("Memtable flushed to disk as SSTable: %s", sstable->path);
+    return 0;
+}
+
+static void _free_sstable(SSTable *sstable) {
+    if (sstable) {
+        if (sstable->path) free(sstable->path);
+        if (sstable->min_key) free(sstable->min_key);
+        if (sstable->max_key) free(sstable->max_key);
+        free_bloom_filter(sstable->bloom_filter);
+        free(sstable);
+    }
+}
+
+int sync_sstables_from_manifest() {
+    char sstable_path[SSTABLE_MAX_PATH_LENGTH / 2];
+    get_sstable_path(sstable_path, sizeof(sstable_path));
+    char manifest_path[SSTABLE_MAX_PATH_LENGTH];
+    snprintf(manifest_path, sizeof(manifest_path), "%s/manifest.dat", sstable_path);
+
+    FILE *manifest_file = _open_file_guarded(manifest_path, "rb");
+    if (!manifest_file) {
+        error("Failed to open manifest file for reading: %s", manifest_path);
+        return -1;
+    }
+
+    uint8_t opcode;
+    while (fread(&opcode, sizeof(uint8_t), 1, manifest_file) == 1) {
+        int level, id, bloom_filter_size, min_key_length, max_key_length;
+        char *min_key = NULL, *max_key = NULL;
+
+        fread(&level, sizeof(int), 1, manifest_file);
+        fread(&id, sizeof(int), 1, manifest_file);
+
+        fread(&min_key_length, sizeof(int), 1, manifest_file);
+        if (min_key_length > 0) {
+            min_key = malloc(min_key_length + 1);
+            fread(min_key, sizeof(char), min_key_length, manifest_file);
+            min_key[min_key_length] = '\0';
+        }
+        fread(&max_key_length, sizeof(int), 1, manifest_file);
+        if (max_key_length > 0) {
+            max_key = malloc(max_key_length + 1);
+            fread(max_key, sizeof(char), max_key_length, manifest_file);
+            max_key[max_key_length] = '\0';
+        }
+
+        fread(&bloom_filter_size, sizeof(int), 1, manifest_file);
+        uint8_t *bloom_array = malloc(bloom_filter_size);
+        fread(bloom_array, sizeof(uint8_t), bloom_filter_size, manifest_file); // Read bloom filter data
+
+
+        if (opcode == 0x01) { // Add SSTable
+            SSTable *sstable = malloc(sizeof(SSTable));
+            sstable->level = level;
+            sstable->id = id;
+            sstable->min_key = min_key;
+            sstable->max_key = max_key;
+
+            sstable->path = _generate_sstable_filepath(level, id);
+
+            sstable->bloom_filter = bloom_filter_create();
+            if (sstable->bloom_filter && sstable->bloom_filter->bit_array) {
+                free(sstable->bloom_filter->bit_array);
+            }
+            sstable->bloom_filter->bit_array = bloom_array;
+
+            if (_add_sstable_to_level_index(sstable)) {
+                error("Failed to add SSTable from manifest to fast access index.");
+                _free_sstable(sstable);
+                continue;
+            }
+        } else if (opcode == 0x02) { // Remove SSTable
+
+            if (min_key) free(min_key);
+            if (max_key) free(max_key);
+            if (bloom_array) free(bloom_array);
+
+            LevelIndex *level_index = &_fast_access_sstables[level];
+            for (int i = 0; i < level_index->count; i++) {
+                SSTable *sstable = level_index->tables[i];
+                if (sstable && sstable->id == id) {
+                    _free_sstable(sstable);
+
+                    for (int j = i; j < level_index->count - 1; j++) {
+                        level_index->tables[j] = level_index->tables[j + 1];
+                    }
+                    level_index->count--;
+                    break;
+                }
+            }
+        }
+    }
+    fclose(manifest_file);
     return 0;
 }
 
