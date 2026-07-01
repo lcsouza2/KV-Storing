@@ -86,4 +86,27 @@ Depois desses lindo bugs, descobri que os dados dos nós não estavam sendo grav
 ```
     if (!context || !context->file || !context->error || !node) return;
 ```
-Vi "!context->error" e quis morrer, então corrigi para "context->error" e agora os dados estão sendo gravados corretamente no arquivo.
+Vi "!context->error" e quis morrer, então corrigi para "context->error" (sem o !) e agora os dados estão sendo gravados corretamente no arquivo.
+
+Com o CRUD da memtable e das SSTables implementado, comecei a trabalhar no Bloom Filter visto que é o menos complexo dos requisitos que faltam e depois de implementar ele eu posso só congelar o sistema e trabalhar com o merge K-vias depois.
+
+Pra entender o Bloom Filter, eu usei o Gemini com o prompt:
+
+```
+Vou começar a implementar o Bloom Filter, me explica como funciona para ter uma ideia do que fazer
+```
+
+Ele me explicou detalhadamente o funcionamento do Bloom Filter, incluindo como ele usa múltiplas funções de hash para mapear elementos em um array de bits e como ele pode ter falsos positivos, mas nunca falsos negativos. Ele também me deu um roadmap para implementar o Bloom Filter em C.
+
+Depois de pedir pra ele me mostrar alguns exemplos de como mover os bits em C, ele me mostrou uns algorítmos de hash, eu sinceramente fiquei meio em choque por que pra mim a lógica do Bloom Filter parecia algo meio sobrenatural, depois de pedir pra ele me explicar a lógica matemática por trás e explorar a fundo o Bloom Filter eu entendi melhor o funcionamento.
+
+Depois de entender melhor a lógica do Bloom Filter, eu confesso que peguei os algorítmos de hash que ele me mostrou antes, depois estudei melhor a implementação das funções add e check, e implementei o Bloom Filter em C, testei e corrigi alguns bugs que apareceram.
+
+Com o Bloom Filter implementado e integrado, comecei a trabalhar no WAL (Write-Ahead Logging). A ideia do WAL é registrar todas as operações de escrita antes de aplicá-las na memtable, garantindo que, em caso de falha, possamos recuperar o estado da memtable a partir do log. Foi um pouco problemático, pois acabou gerando loop infinito (O WAL chamava a função de insert, e a função de insert escrevia no WAL). Resolvi isso separando a escrita de WAL e dumping pra SSTable pra uma função de interface pro usuário, assim a memtable_insert só lidava com a memtable e era cega para o resto dos componentes
+
+Depois de reescrever o insert da memtable, comecei a implementar funções de interface de usuário, as que vão ser executadas pelo menu, foi fácil até, pedi ajuda pro Gemini pra implementar um perf counter usando o prompt:
+```
+Queria implementar um perf timer, como faço isso?
+```
+
+Ele me deu um bloco de código que usava CLOCK_MONOTONIC, mas por ser uma definição exclusiva dos kernels POSIX eu pedi pra ele me dar uma alternativa que fosse cross-platform, então ele me deu um bloco de código que usava #ifdef _WIN32 para Windows e #else para Linux, e eu implementei o perf counter cross-platform com sucesso.
