@@ -64,6 +64,6 @@ int main() {
         return -1;
     }
 
-    info("All tests passed!");
+    success("All tests passed!");
     return 0;
 }
