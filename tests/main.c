@@ -12,7 +12,7 @@ extern int test_tree_double_right_rotation();
 extern int test_memtable_create();
 extern int test_memtable_insert();
 extern int test_memtable_min_max_keys();
-extern int test_memtable_tacks_min_max_key_in_o1();
+extern int test_memtable_tracks_min_max_key_in_o1();
 extern int test_memtable_search_existing_key();
 extern int test_memtable_search_nonexistent_key();
 extern int test_memtable_delete_existing_key();
@@ -22,7 +22,9 @@ extern int test_memtable_autoflush();
 extern int test_sstable_search();
 extern int test_bloom_filter_rejects_random_key();
 extern int test_bloom_filter_accepts_existing_key();
-
+extern int test_wal_syncing_success();
+extern int test_memtable_level_select();
+extern int test_sstable_level_select();
 
 int main() {
     int failed = 0;
@@ -40,7 +42,7 @@ int main() {
     if (test_memtable_create() != 0) failed++;
     if (test_memtable_insert() != 0) failed++;
     if (test_memtable_min_max_keys() != 0) failed++;
-    if (test_memtable_tacks_min_max_key_in_o1() != 0) failed++;
+    if (test_memtable_tracks_min_max_key_in_o1() != 0) failed++;
     if (test_memtable_update_existing_key() != 0) failed++;
     if (test_memtable_delete_existing_key() != 0) failed++;
     if (test_memtable_delete_nonexistent_key() != 0) failed++;
@@ -50,6 +52,9 @@ int main() {
     if (test_sstable_search() != 0) failed++;
     if (test_bloom_filter_rejects_random_key() != 0) failed++;
     if (test_bloom_filter_accepts_existing_key() != 0) failed++;
+    if (test_wal_syncing_success() != 0) failed++;
+    if (test_memtable_level_select() != 0) failed++;
+    if (test_sstable_level_select() != 0) failed++;
 
     if (failed > 0) {
         error("%d test(s) failed.", failed);
