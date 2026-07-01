@@ -2,6 +2,7 @@
 #define SSTABLES_H
 #include "memtable.h"
 #include "bloom_filter.h"
+#include "utils.h"
 
 typedef struct sstable {
     char *path;
@@ -18,5 +19,5 @@ typedef struct level_index {
 } LevelIndex;
 
 int flush_memtable_to_disk(Memtable *memtable, int level);
-char *search_in_sstables(char *key);
+SearchResult search_in_sstables(char *key);
 #endif

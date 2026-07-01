@@ -3,8 +3,9 @@
 #include <time.h>
 
 typedef struct {
-    struct timespec start;
-} PerfTimer;
+    char *value;
+    int found;
+} SearchResult;
 
 #ifdef _WIN32
     // No Windows, usamos o clock() que retorna em CLOCKS_PER_SEC
@@ -20,5 +21,4 @@ typedef struct {
 #endif
 
 char *read_dynamic_input();
-void start_perf_timer(PerfTimer *timer);
 #endif

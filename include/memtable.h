@@ -1,5 +1,6 @@
 #ifndef MEMTABLE_H
 #define MEMTABLE_H
+#include "utils.h"
 
 typedef struct avl_node {
     char *value;
@@ -20,7 +21,7 @@ Memtable *create_memtable();
 
 Memtable *insert_memtable(Memtable *tree, char *key, char *value);
 
-char *search_memtable(Memtable *tree, char *key);
+SearchResult search_memtable(Memtable *tree, char *key);
 
 void *delete_from_memtable(Memtable *tree, char *key);
 
