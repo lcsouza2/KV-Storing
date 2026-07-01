@@ -124,3 +124,21 @@ Durante a implementação lembrei da situação "E se o tamanho do Bloom Filter 
 Implementei isso aí, criei a função que restaura o WAL e o index das sstables no boot do banco, e agora o banco funciona corretamente mesmo após reinicializações, sem perder o estado das sstables e do Bloom Filter.
 
 Por enquanto é isso aí, hoje é 01/07/2026 as 01:38 da manhã, 13 horas tem prova do Bruno de BST e AVL e eu tô aqui quase tendo um derrame depois de ficar mais de 16 horas mexendo com C. Amanhã depois da prova eu começo Merge K-vias e aproveito ele pra fazer o display all keys, que é o último requisito do projeto. Depois disso, é só gravar aquele vídeo que tá pedindo no documento.
+
+Acordei, fiz um café forte que só o cão e vimn direto pro PC começar a implementar merge k-vias por que eu descobri que ainda tinha um relatório de 8 páginas no mínimo pra entregar. Pra entender melhor o merge k-vias, eu pedi pro Gemini me explicar com o prompt:
+```
+Me explica melhor o merge k-vias, como ele funciona e como eu lido com as tombstones e chaves repetidas
+```
+
+Ele me explicou que basicamente você armazena a raiz num buffer, pega a próxima chave e valor da sstable, compara com a raiz que tá no buffer, se foram diferentes o buffer vai pro destino, se forem iguais você armazena o buffer e libera a chave nova, já que o que está guardado no buffer é o mais recente. Ele também me deu um roadmap de como implementar o merge k-vias em C.
+
+Comecei a implementar, apareceram vários problemas, commitei tudo com [WIP] nos commits e larguei de lado pois precisava ir fazer a prova.
+O que falta implementar para o merge k-vias ficar lindo:
+- [ ] Limitar o tamanho dos arquivos pra 10 * nível * tamanho_da_memtable
+- [ ] Escrever testes
+- [ ] Adicionar um watcher que verifica a quantidade de arquivos em cada nível e chama o merge k-vias numa thread paralela quando necessário
+- [ ] Implementar o display all keys, que vai usar das mesmas funções de iteração k-vias
+- [ ] Adicionar contador de limite de tamanho de arquivo, na função de compactar sstables
+- [ ] Implementar o menu do usuário
+
+Acabei de receber a notícia de que o Bruno não vai adiar o trabalho, então provável que essa madrugada seja a base de café e código.
