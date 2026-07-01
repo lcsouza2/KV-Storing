@@ -13,7 +13,7 @@ int _get_height(AVLNode *node) {
 }
 
 AVLNode *_create_node(char* key, char *value) {
-    if (key == NULL || value == NULL) {
+    if (key == NULL) {
         debug("Key or value is NULL in _create_node.");
         return NULL;
     }
@@ -24,12 +24,15 @@ AVLNode *_create_node(char* key, char *value) {
     }
 
     node->key = strdup(key);
-    node->value = strdup(value);
-    if (!node->key || !node->value) {
-        debug("Failed to allocate memory for key or value in AVLNode.");
-        free(node->key);
-        free(node->value);
+    if (value != NULL) {
+        node->value = strdup(value);
+    } else {
+        node->value = NULL;
+    }
+    if (!node->key) {
+        debug("Failed to allocate memory for key in AVLNode.");
         free(node);
+        if (node->value) free(node->value);
         return NULL;
     }
     node->height = 1;
