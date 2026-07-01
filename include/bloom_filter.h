@@ -12,4 +12,5 @@ BloomFilter *bloom_filter_create();
 
 void bloom_add(BloomFilter *filter, const char *key);
 int bloom_check(BloomFilter *filter, const char *key);
+void free_bloom_filter(BloomFilter *filter);
 #endif
