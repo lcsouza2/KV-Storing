@@ -62,8 +62,10 @@ static void _wal_callback(Memtable *memtable, char *key, char *value) {
 
     if (value) {
         insert_memtable(memtable, key, value);
+        info("Replayed WAL log: %s -> %s", key, value);
     } else {
         delete_from_memtable(memtable, key);
+        info("Replayed WAL log: %s -> TOMBSTONE", key);
     }
 }
 
