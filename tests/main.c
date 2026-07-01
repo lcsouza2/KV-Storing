@@ -26,6 +26,7 @@ extern int test_wal_syncing_success();
 extern int test_memtable_level_select();
 extern int test_sstable_level_select();
 extern int test_delete_inserts_tombstone();
+extern int test_merge_k_vias_success();
 
 int main() {
     int failed = 0;
@@ -57,6 +58,7 @@ int main() {
     if (test_memtable_level_select() != 0) failed++;
     if (test_sstable_level_select() != 0) failed++;
     if (test_delete_inserts_tombstone() != 0) failed++;
+    if (test_merge_k_vias_success() != 0) failed++;
 
 
     if (failed > 0) {
