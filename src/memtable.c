@@ -5,6 +5,7 @@
 #include "memtable.h"
 #include "sstables.h"
 #include "settings.h"
+#include "utils.h"
 
 // LOW LEVEL FUNCTIONS =============================
 int _get_height(AVLNode *node) {
@@ -31,8 +32,8 @@ AVLNode *_create_node(char* key, char *value) {
     }
     if (!node->key) {
         debug("Failed to allocate memory for key in AVLNode.");
-        free(node);
         if (node->value) free(node->value);
+        free(node);
         return NULL;
     }
     node->height = 1;
@@ -194,12 +195,15 @@ Memtable *insert_memtable(Memtable *tree, char *key, char *value) {
     return tree;
 }
 
-char *search_memtable(Memtable *tree, char *key) {
-    if (tree == NULL) return NULL;
+SearchResult search_memtable(Memtable *tree, char *key) {
+    SearchResult result = { .value = NULL, .found = 0 };
+    if (tree == NULL) return result;
     AVLNode *node = _search(tree->root, key);
-    if (node == NULL) return NULL;
+    if (node == NULL) return result;
 
-    return node->value;
+    result.value = node->value;
+    result.found = 1;
+    return result;
 }
 
 void *delete_from_memtable(Memtable *tree, char *key) {

@@ -6,6 +6,7 @@
 #include "sstables.h"
 #include "memtable.h"
 #include "bloom_filter.h"
+#include "utils.h"
 
 LevelIndex _fast_access_sstables[MAX_SSTABLE_LEVELS];
 
@@ -261,7 +262,8 @@ int flush_memtable_to_disk(Memtable *memtable, int level) {
     return 0;
 }
 
-char *search_in_sstables(char *key) {
+SearchResult search_in_sstables(char *key) {
+    SearchResult result = { .value = NULL, .found = 0 };
     for (int level = 0; level < MAX_SSTABLE_LEVELS; level++) {
         LevelIndex *level_index = &_fast_access_sstables[level];
         for (int i = level_index->count - 1; i >= 0; i--) {
@@ -274,10 +276,14 @@ char *search_in_sstables(char *key) {
             debug("Bloom filter said 'Maybe...' to key: %s in SSTable: %s", key, sstable->path);
 
             if (sstable && strcmp(key, sstable->min_key) >= 0 && strcmp(key, sstable->max_key) <= 0) {
-                char *result = _read_and_search_in_sstable(sstable, key);
-                if (result) return result;
+                char *value = _read_and_search_in_sstable(sstable, key);
+                if (value) {
+                    result.value = value;
+                    result.found = 1;
+                    return result;
+                }
             }
         }
     }
-    return NULL;
+    return result;
 }
