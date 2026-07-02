@@ -5,6 +5,8 @@
 #include "utils.h"
 #include "settings.h"
 #include "sstables.h"
+#include "k_way_iterator.h"
+#include "logging.h"
 
 /**
  * @brief Reads a dynamic input from standard input.
@@ -68,3 +70,23 @@ int clear_sstables_after_test() {
     }
     return 0;
 }
+
+static int _should_compact_sstables(int level) {
+    int count = get_sstable_count(level);
+    return count > MAX_SSTABLE_LEVEL_FILES;
+}
+
+void check_and_compact_sstables(int level) {
+    if (level >= MAX_SSTABLE_LEVELS - 1) {
+        return;
+    }
+
+    if (_should_compact_sstables(level)) {
+        info("Compacting SSTables at level %d", level);
+        compact_sstables(get_sstable_count(level), level);
+        check_and_compact_sstables(level + 1);
+    }
+
+    return;
+}
+
