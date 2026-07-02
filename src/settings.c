@@ -70,3 +70,11 @@ int get_memtable_size() {
     }
     return 5242880; // Default to 5MB if not set
 }
+
+
+int get_max_log_len() {
+    if (getenv("MAX_LOG_LEN")) {
+        return atoi(getenv("MAX_LOG_LEN"));
+    }
+    return 512; // Default value
+}

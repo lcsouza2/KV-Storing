@@ -1,6 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 int get_memtable_size();
+int get_max_log_len();
 #include <stdlib.h>
 
 #define MAX_SSTABLE_LEVEL_FILES 5
@@ -8,6 +9,7 @@ int get_memtable_size();
 #define MAX_MEMTABLE_SIZE get_memtable_size() // 5MB || defined by environment variable MEMTABLE_SIZE
 #define SSTABLE_MAX_PATH_LENGTH 256
 #define WAL_MAX_PATH_LENGTH 256
+#define MAX_LOG_LEN get_max_log_len()
 
 #define MAX_KEY_LENGTH 256
 
