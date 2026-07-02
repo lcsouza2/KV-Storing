@@ -16,8 +16,8 @@ kvstore: $(OBJ) main.c
 	$(CC) $(CFLAGS) -o kvstore main.c $(OBJ) $(LDFLAGS)
 
 test: $(OBJ)
-	$(CC) $(CFLAGS) -o run_tests tests/unit/*.c tests/main.c $(OBJ) $(LDFLAGS)
-	DATA_PATH=./tests/data MEMTABLE_SIZE=1024 ./run_tests
+	$(CC) $(CFLAGS) -fsanitize=address -g -o run_tests tests/unit/*.c tests/main.c $(OBJ) $(LDFLAGS)
+	DATA_PATH=./tests/data MEMTABLE_SIZE=1024 MAX_LOG_LEN=128 ./run_tests
 	rm -rf run_tests ./tests/data
 
 clean:
