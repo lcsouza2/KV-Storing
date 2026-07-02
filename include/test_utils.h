@@ -1,5 +1,7 @@
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
+#include "sstables.h"
+#include "settings.h"
 
 #define ASSERT_TEST(cond, msg) \
     do { \
@@ -8,4 +10,7 @@
             return -1; \
         } \
     } while (0)
+
+int clear_sstables_after_test();
+
 #endif

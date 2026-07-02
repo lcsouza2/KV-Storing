@@ -3,6 +3,8 @@
 #include <string.h>
 #include <time.h>
 #include "utils.h"
+#include "settings.h"
+#include "sstables.h"
 
 /**
  * @brief Reads a dynamic input from standard input.
@@ -41,3 +43,28 @@ char *read_dynamic_input() {
     return buffer;
 }
 
+char *generate_sstable_filepath(int level, int id) {
+    char filepath[SSTABLE_MAX_PATH_LENGTH];
+    char sstable_path[SSTABLE_MAX_PATH_LENGTH / 2];
+    get_sstable_path(sstable_path, sizeof(sstable_path));
+
+    snprintf(
+        filepath,
+        sizeof(filepath),
+        "%s/L%d_%d.dat",
+        sstable_path,
+        level,
+        id
+    );
+
+    return strdup(filepath);
+}
+
+int clear_sstables_after_test() {
+    for (int id = 0; id < MAX_SSTABLE_LEVEL_FILES; id++) {
+        for (int level = 0; level < MAX_SSTABLE_LEVELS; level++) {
+            delete_sstable(level, id);
+        }
+    }
+    return 0;
+}
