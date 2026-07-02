@@ -134,11 +134,15 @@ Ele me explicou que basicamente você armazena a raiz num buffer, pega a próxim
 
 Comecei a implementar, apareceram vários problemas, commitei tudo com [WIP] nos commits e larguei de lado pois precisava ir fazer a prova.
 O que falta implementar para o merge k-vias ficar lindo:
-- [ ] Limitar o tamanho dos arquivos pra 10 * nível * tamanho_da_memtable
-- [ ] Escrever testes
+- [*] Limitar o tamanho dos arquivos pra 10 * nível * tamanho_da_memtable
+- [*] Escrever testes
 - [ ] Adicionar um watcher que verifica a quantidade de arquivos em cada nível e chama o merge k-vias numa thread paralela quando necessário
-- [ ] Implementar o display all keys, que vai usar das mesmas funções de iteração k-vias
-- [ ] Adicionar contador de limite de tamanho de arquivo, na função de compactar sstables
+- [*] Implementar o display all keys, que vai usar das mesmas funções de iteração k-vias
+- [*] Adicionar contador de limite de tamanho de arquivo, na função de compactar sstables
 - [ ] Implementar o menu do usuário
 
 Acabei de receber a notícia de que o Bruno não vai adiar o trabalho, então provável que essa madrugada seja a base de café e código.
+Tô implementando o merge k-vias, reaproveitei alguns códigos do Gemini e do Copilot, o módulo virou uma sopa imanutenível, vou ser obrigado a refatorar
+
+Faltam algumas horas pras apresentações do trabalho e eu ainda preciso verificar memory leaks, fazer o relatório e gravar o vídeo. Então não tenho escrito muito nesse arquivo.
+Mas as últimas alterações foram em torno do k-vias iteration, que usa um MinHeap pra iterar pelas sstables, desacoplei o MinHeap do resto, agora o MinHeap é uma estrutura de dados burra que só sabe gerenciar a estrutura de dados, a lógica de negócios é passada pra ele através de callbacks e gerenciada pelo módulo de k-vias iteration. Implementei o level compactor e depois disso o display all keys, o display all keys foi bobeira, reutilizei muito código do compactor, só que ao invés de escrever pra um arquivo eu escrevia pro stdout. Além disso, implementei alguns utilitários de testes.
