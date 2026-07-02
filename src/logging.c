@@ -1,10 +1,12 @@
 #include <stdio.h>
-#include <time.h>
 #include <stdarg.h>
+#include "settings.h"
 
 void _print_log(const char *level, const char *format, va_list args) {
+    char buffer[MAX_LOG_LEN];
+    vsnprintf(buffer, sizeof(buffer), format, args);
     printf("[%s]: ", level);
-    vprintf(format, args);
+    vprintf(buffer, args);
     printf("\n");
 }
 
