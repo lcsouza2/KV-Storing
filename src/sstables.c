@@ -132,22 +132,31 @@ static char *_read_and_search_in_sstable(SSTable *sstable, char *key) {
         return NULL;
     }
 
+    char *min_key = NULL;
+    char *max_key = NULL;
+
     int min_key_length, max_key_length;
     fread(&min_key_length, sizeof(int), 1, file);
-    char *min_key = malloc(min_key_length + 1);
-    fread(min_key, sizeof(char), min_key_length, file);
-    min_key[min_key_length] = '\0';
+    if (min_key_length > 0 ) {
+        min_key = malloc(min_key_length + 1);
+        fread(min_key, sizeof(char), min_key_length, file);
+        min_key[min_key_length] = '\0';
+    }
 
     fread(&max_key_length, sizeof(int), 1, file);
-    char *max_key = malloc(max_key_length + 1);
-    fread(max_key, sizeof(char), max_key_length, file);
-    max_key[max_key_length] = '\0';
+    if (max_key_length > 0) {
+        max_key = malloc(max_key_length + 1);
+        fread(max_key, sizeof(char), max_key_length, file);
+        max_key[max_key_length] = '\0';
+    }
 
-    if (strcmp(key, min_key) < 0 || strcmp(key, max_key) > 0) {
-        free(min_key);
-        free(max_key);
-        fclose(file);
-        return NULL;
+    if (min_key != NULL && max_key != NULL) {
+        if (strcmp(key, min_key) < 0 || strcmp(key, max_key) > 0) {
+            free(min_key);
+            free(max_key);
+            fclose(file);
+            return NULL;
+        }
     }
 
     free(min_key);
@@ -313,6 +322,7 @@ int flush_memtable_to_disk(Memtable *memtable, int level) {
     }
 
     info("Memtable flushed to disk as SSTable: %s", sstable->path);
+    check_and_compact_sstables(0);
     return 0;
 }
 
